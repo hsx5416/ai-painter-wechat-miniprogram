@@ -1,0 +1,32 @@
+/* 全局 CSS 变量 —— 暗色主题 (默认) */
+page {
+  --bg: #0b0d17;
+  --bg-soft: #131625;
+  --bg-card: #1a1e30;
+  --border: #2a2f45;
+  --text: #e6e8f0;
+  --text-dim: #8a90a8;
+  --primary: #7c5cff;
+  --primary-hover: #9178ff;
+  --accent: #00d4ff;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 10px;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+}
+
+/* 亮色主题 */
+page.light {
+  --bg: #f6f7fb;
+  --bg-soft: #ffffff;
+  --bg-card: #ffffff;
+  --border: #e5e7ef;
+  --text: #1a1e30;
+  --text-dim: #6b7280;
+}

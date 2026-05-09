@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "AI Painter",
+    "navigationBarBackgroundColor": "#0b0d17",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0b0d17"
+  },
+  "sitemapLocation": "sitemap.json"
+}

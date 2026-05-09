@@ -1,0 +1,305 @@
+<!-- pages/index/index.wxml - Sassi的画画小文书 主页面 -->
+<scroll-view scroll-y="true" class="page {{themeClass}}" enable-flex="true">
+
+  <!-- ===== 头部品牌 + 标签 ===== -->
+  <view class="header">
+    <view class="brand">
+      <view class="brand-logo">
+        <text>AI</text>
+      </view>
+      <view>
+        <view class="brand-title">Sassi的画画小文书</view>
+        <view class="brand-subtitle">文生图 · 图生图</view>
+      </view>
+    </view>
+    <view class="tabs">
+      <view class="tab {{mode === 't2i' ? 'active' : ''}}" bindtap="switchMode" data-mode="t2i">文生图</view>
+      <view class="tab {{mode === 'i2i' ? 'active' : ''}}" bindtap="switchMode" data-mode="i2i">图生图</view>
+    </view>
+  </view>
+
+  <!-- ===== API 配置 (可折叠) ===== -->
+  <view class="panel">
+    <view class="panel-header" bindtap="toggleSection" data-section="showApiConfig">
+      <view class="panel-title">
+        <view class="panel-title-bar"></view>
+        <text>API 配置</text>
+      </view>
+      <view class="panel-toggle {{showApiConfig ? 'open' : ''}}">▾</view>
+    </view>
+
+    <view wx:if="{{showApiConfig}}" class="panel-body">
+      <view class="field">
+        <view class="label">请求地址 (Endpoint)</view>
+        <input class="input" placeholder="https://api.openai.com/v1"
+          placeholder-style="color:#8a90a8;font-size:14px"
+          value="{{apiBase}}" bindinput="onFieldInput" data-field="apiBase" />
+        <view class="hint">示例: https://api.openai.com/v1 · 不含 /images/generations</view>
+      </view>
+
+      <view class="field">
+        <view class="label">API 密钥</view>
+        <input class="input" type="text" password="true"
+          placeholder="sk-..." placeholder-style="color:#8a90a8;font-size:14px"
+          value="{{apiKey}}" bindinput="onFieldInput" data-field="apiKey" />
+      </view>
+
+      <view class="field">
+        <view class="label">模型名称</view>
+        <input class="input" placeholder="dall-e-3 / stable-diffusion / flux ..."
+          placeholder-style="color:#8a90a8;font-size:14px"
+          value="{{model}}" bindinput="onFieldInput" data-field="model" />
+        <view class="hint">请填写服务商支持的模型 ID</view>
+      </view>
+
+      <view class="field">
+        <view class="label">接口协议</view>
+        <picker mode="selector" range="{{apiProtocols}}" range-key="name"
+          value="{{apiProtocolIndex}}" bindchange="onProtocolChange">
+          <view class="picker">
+            {{apiProtocols[apiProtocolIndex].name}}
+          </view>
+        </picker>
+      </view>
+
+      <button class="btn btn-small" bindtap="testApi" disabled="{{testing}}">
+        {{testing ? '测试中...' : '测试连接'}}
+      </button>
+    </view>
+  </view>
+
+  <!-- ===== 预设 (可折叠) ===== -->
+  <view class="panel">
+    <view class="panel-header" bindtap="toggleSection" data-section="showPresets">
+      <view class="panel-title">
+        <view class="panel-title-bar"></view>
+        <text>预设</text>
+      </view>
+      <view class="panel-toggle {{showPresets ? 'open' : ''}}">▾</view>
+    </view>
+
+    <view wx:if="{{showPresets}}" class="panel-body">
+      <picker mode="selector" range="{{presetNames}}" bindchange="onPresetSelect">
+        <view class="picker">
+          {{presetNames[presetIndex] || '-- 选择配置预设 --'}}
+        </view>
+      </picker>
+
+      <view class="preset-save">
+        <input class="input flex-1" placeholder="预设名称"
+          placeholder-style="color:#8a90a8;font-size:14px"
+          value="{{presetName}}" bindinput="onFieldInput" data-field="presetName" />
+        <button class="btn btn-small" bindtap="savePreset">保存</button>
+      </view>
+
+      <button class="btn btn-ghost" bindtap="deletePreset">删除当前预设</button>
+    </view>
+  </view>
+
+  <!-- ===== 创作参数 ===== -->
+  <view class="panel">
+    <view class="panel-title">
+      <view class="panel-title-bar"></view>
+      <text>创作参数</text>
+    </view>
+    <view class="panel-body">
+
+      <!-- 图生图：图片上传 -->
+      <view wx:if="{{mode === 'i2i'}}" class="field">
+        <view class="label">参考图片 (图生图)</view>
+        <view class="upload-area" bindtap="chooseImage">
+          <block wx:if="{{!uploadedImagePath}}">
+            <view class="upload-placeholder">
+              <view class="upload-icon">🖼️</view>
+              <view class="upload-text">点击选择图片</view>
+              <view class="hint">支持 PNG / JPG / WebP</view>
+            </view>
+          </block>
+          <image wx:else class="upload-preview" src="{{uploadedImagePath}}" mode="aspectFit" />
+        </view>
+      </view>
+
+      <!-- 正向提示词 -->
+      <view class="field">
+        <view class="label">正向提示词 (Prompt)</view>
+        <textarea class="textarea" placeholder="描述你想要的画面，例如：一只坐在樱花树下的白猫，水彩风格，柔和光线..."
+          placeholder-style="color:#8a90a8;font-size:14px"
+          value="{{prompt}}" bindinput="onFieldInput" data-field="prompt"
+          auto-height="true" maxlength="-1" />
+        <view class="tags">
+          <view class="tag" wx:for="{{quickTags}}" wx:key="name"
+            bindtap="appendTag" data-tag="{{item.value}}">
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+
+      <!-- 高级参数 -->
+      <view class="advanced-toggle" bindtap="toggleSection" data-section="showAdvanced">
+        <text>高级参数 {{showAdvanced ? '▴' : '▾'}}</text>
+      </view>
+
+      <view wx:if="{{showAdvanced}}">
+        <view class="field">
+          <view class="label">负向提示词 (Negative Prompt)</view>
+          <textarea class="textarea" placeholder="不想出现的元素，例如：low quality, blurry, distorted..."
+            placeholder-style="color:#8a90a8;font-size:14px"
+            value="{{negPrompt}}" bindinput="onFieldInput" data-field="negPrompt"
+            auto-height="true" maxlength="-1" />
+        </view>
+
+        <view class="row">
+          <view class="field flex-1">
+            <view class="label">尺寸</view>
+            <picker mode="selector" range="{{sizes}}" range-key="name"
+              value="{{sizeIndex}}" bindchange="onSizeChange">
+              <view class="picker">{{sizes[sizeIndex].name}}</view>
+            </picker>
+          </view>
+          <view class="field flex-1">
+            <view class="label">生成数量</view>
+            <picker mode="selector" range="{{counts}}" value="{{countIndex}}" bindchange="onCountChange">
+              <view class="picker">{{counts[countIndex]}} 张</view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="row">
+          <view class="field flex-1">
+            <view class="label">质量 / Quality</view>
+            <picker mode="selector" range="{{qualities}}" range-key="name"
+              value="{{qualityIndex}}" bindchange="onQualityChange">
+              <view class="picker">{{qualities[qualityIndex].name}}</view>
+            </picker>
+          </view>
+          <view class="field flex-1">
+            <view class="label">风格</view>
+            <picker mode="selector" range="{{styles}}" range-key="name"
+              value="{{styleIndex}}" bindchange="onStyleChange">
+              <view class="picker">{{styles[styleIndex].name}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <!-- 图生图：相似度 -->
+        <view wx:if="{{mode === 'i2i'}}" class="field">
+          <view class="label">图生图相似度 (Strength)</view>
+          <view class="slider-row">
+            <slider class="slider" min="0" max="100" step="5" value="{{strengthPercent}}"
+              bindchange="onStrengthChange" show-value="true" activeColor="#7c5cff" />
+            <text class="slider-value">{{strengthStr}}</text>
+          </view>
+          <view class="hint">越低越忠于原图，越高越贴近提示词</view>
+        </view>
+
+        <view class="field">
+          <view class="label">种子 (Seed, 可选)</view>
+          <input class="input" type="number" placeholder="留空为随机"
+            placeholder-style="color:#8a90a8;font-size:14px"
+            value="{{seed}}" bindinput="onFieldInput" data-field="seed" />
+        </view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="generate-bar">
+        <button class="btn btn-primary" bindtap="generate" disabled="{{loading}}">
+          {{loading ? '⏳ 生成中...' : '✨ 开始生成'}}
+        </button>
+        <button class="btn" bindtap="stopGenerate" disabled="{{!loading}}">停止</button>
+        <button class="btn" bindtap="randomPrompt">🎲</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 生成结果 ===== -->
+  <view class="panel">
+    <view class="panel-title">
+      <view class="panel-title-bar"></view>
+      <text>生成结果</text>
+    </view>
+    <view class="panel-body">
+      <!-- 加载中 -->
+      <view wx:if="{{loading}}" class="gallery">
+        <view class="loading-card" wx:for="{{loadingCount}}" wx:key="*this">
+          <view class="spinner"></view>
+          <view class="loading-text">AI 正在作画中...</view>
+        </view>
+      </view>
+
+      <!-- 结果为空 -->
+      <view wx:elif="{{results.length === 0}}" class="empty-state">
+        <view class="empty-icon">🎨</view>
+        <view class="empty-text">还没有作品，填写提示词并点击"开始生成"</view>
+      </view>
+
+      <!-- 结果展示 -->
+      <view wx:else class="gallery">
+        <view class="card" wx:for="{{results}}" wx:key="index">
+          <image class="card-img" src="{{item.src}}" mode="aspectFill"
+            data-src="{{item.src}}" bindtap="previewImage" />
+          <view class="card-body">
+            <view class="card-prompt">{{resultsMeta.prompt}}</view>
+            <view class="card-actions">
+              <button class="btn btn-card" data-src="{{item.src}}" data-idx="{{index}}"
+                bindtap="downloadImage">下载</button>
+              <button class="btn btn-card" data-prompt="{{resultsMeta.prompt}}"
+                bindtap="copyPrompt">复制词</button>
+              <button class="btn btn-card" data-prompt="{{resultsMeta.prompt}}"
+                bindtap="reusePrompt">重用</button>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 错误信息 -->
+      <view wx:if="{{errorMsg}}" class="empty-state">
+        <view class="empty-icon">❌</view>
+        <view class="empty-text">{{errorMsg}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 历史记录 ===== -->
+  <view class="panel">
+    <view class="panel-title">
+      <view class="panel-title-bar"></view>
+      <text>历史记录</text>
+    </view>
+    <view class="panel-body">
+      <view wx:if="{{history.length === 0}}" class="empty-state">
+        <view class="empty-icon">📜</view>
+        <view class="empty-text">历史记录将出现在这里</view>
+      </view>
+
+      <view wx:else class="gallery">
+        <view class="card" wx:for="{{history}}" wx:key="unique" wx:for-item="hItem" wx:for-index="hIdx">
+          <image class="card-img" src="{{hItem.src}}" mode="aspectFill"
+            data-src="{{hItem.src}}" bindtap="previewImage" />
+          <view class="card-body">
+            <view class="card-prompt">{{hItem.meta.prompt}}</view>
+            <view class="card-actions">
+              <button class="btn btn-card" data-src="{{hItem.src}}" data-idx="{{hItem.index}}"
+                bindtap="downloadImage">下载</button>
+              <button class="btn btn-card" data-prompt="{{hItem.meta.prompt}}"
+                bindtap="copyPrompt">复制词</button>
+              <button class="btn btn-card" data-prompt="{{hItem.meta.prompt}}"
+                bindtap="reusePrompt">重用</button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 底部操作 ===== -->
+  <view class="footer">
+    <button class="btn" bindtap="toggleTheme">
+      {{themeClass === 'light' ? '🌙 暗色模式' : '☀️ 亮色模式'}}
+    </button>
+    <button class="btn" bindtap="clearHistory">清空历史</button>
+  </view>
+
+  <view class="hint footer-hint">
+    💡 所有数据仅存储在本地，不会上传。开发时请在"详情-本地设置"中勾选"不校验合法域名"。
+  </view>
+</scroll-view>
